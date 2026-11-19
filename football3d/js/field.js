@@ -66,6 +66,7 @@ function buildStadium(scene) {
     new THREE.MeshLambertMaterial({ map: pitchTex })
   );
   pitch.rotation.x = -Math.PI / 2;
+  pitch.receiveShadow = true;
   group.add(pitch);
 
   /* --- Ворота --- */
@@ -276,5 +277,37 @@ function buildStadium(scene) {
   );
   scene.add(sky);
 
-  return { group, fans };
+  /* --- Облака --- */
+  const cloudTex = makeCanvasTexture(128, 64, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    for (let i = 0; i < 5; i++) {
+      const cx = 20 + rand(0, w - 40), cy = 22 + rand(-8, 8), r = 14 + rand(0, 10);
+      const gr = g.createRadialGradient(cx, cy, 2, cx, cy, r);
+      gr.addColorStop(0, 'rgba(255,255,255,0.85)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr;
+      g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+    }
+  });
+  const clouds = { list: [], update(dt) {} };
+  for (let i = 0; i < 7; i++) {
+    const cm = new THREE.Mesh(
+      new THREE.PlaneGeometry(rand(30, 60), rand(14, 26)),
+      new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, opacity: 0.75, depthWrite: false, fog: false })
+    );
+    cm.position.set(rand(-160, 160), rand(38, 60), rand(-160, 160));
+    cm.rotation.x = -0.35;
+    cm.userData.speed = rand(0.6, 1.6);
+    cm.userData.wrap = 190;
+    scene.add(cm);
+    clouds.list.push(cm);
+  }
+  clouds.update = function (dt) {
+    for (const c of this.list) {
+      c.position.x += c.userData.speed * dt;
+      if (c.position.x > c.userData.wrap) c.position.x = -c.userData.wrap;
+    }
+  };
+
+  return { group, fans, clouds };
 }

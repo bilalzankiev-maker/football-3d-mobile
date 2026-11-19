@@ -1,19 +1,26 @@
 'use strict';
-/* ==== Сенсорное управление + клавиатура ==== */
+/* ==== Управление v2: P1 + P2 (один экран), кнопки камеры/смены, клавиатура ==== */
 
-const input = {
-  joyX: 0, joyY: 0,        // -1..1, joyY>0 = вниз экрана
-  moveX: 0, moveY: 0,
-  sprint: false,
-  shootHeld: false,
-  shootCharge: 0,          // 0..1
-  shootLatch: false,
-  passLatch: false,
-  tackleLatch: false,
-};
+const input = mkInput();
+const input2 = mkInput();
+
+function mkInput() {
+  return {
+    joyX: 0, joyY: 0,
+    moveX: 0, moveY: 0,
+    sprint: false,
+    shootHeld: false,
+    shootCharge: 0,
+    shootLatch: false,
+    passLatch: false,
+    tackleLatch: false,
+    switchLatch: false,
+    camLatch: false,
+    active: true,
+  };
+}
 
 function initControls() {
-  /* --- Джойстик (левая половина, динамическая позиция базы) --- */
   const zone = document.getElementById('joyZone');
   const base = document.getElementById('joyBase');
   const stick = document.getElementById('joyStick');
@@ -49,15 +56,52 @@ function initControls() {
   zone.addEventListener('pointerup', joyEnd);
   zone.addEventListener('pointercancel', joyEnd);
 
-  /* --- Кнопки --- */
+  /* --- P2 джойстик (верхняя зона, только в 2P) --- */
+  const zone2 = document.getElementById('joyZone2');
+  const base2 = document.getElementById('joyBase2');
+  const stick2 = document.getElementById('joyStick2');
+  let joyId2 = null, cx2 = 0, cy2 = 0;
+  if (zone2) {
+    zone2.addEventListener('pointerdown', (e) => {
+      if (!input2.active) return;
+      if (joyId2 !== null) return;
+      joyId2 = e.pointerId;
+      cx2 = e.clientX; cy2 = e.clientY;
+      base2.style.display = 'block';
+      base2.style.left = (cx2 - 64) + 'px';
+      base2.style.top = (cy2 - 64) + 'px';
+      zone2.setPointerCapture(e.pointerId);
+    });
+    zone2.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== joyId2) return;
+      let dx = e.clientX - cx2, dy = e.clientY - cy2;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (len > MAXR) { dx = dx / len * MAXR; dy = dy / len * MAXR; }
+      stick2.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      input2.joyX = dx / MAXR;
+      input2.joyY = dy / MAXR;
+    });
+    const joyEnd2 = (e) => {
+      if (e.pointerId !== joyId2) return;
+      joyId2 = null;
+      input2.joyX = 0; input2.joyY = 0;
+      stick2.style.transform = 'translate(-50%,-50%)';
+      base2.style.display = 'none';
+    };
+    zone2.addEventListener('pointerup', joyEnd2);
+    zone2.addEventListener('pointercancel', joyEnd2);
+  }
+
+  /* --- кнопки --- */
   const bind = (id, down, up) => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault(); Snd.init(); Snd.resume();
       el.classList.add('pressed');
       if (down) down();
     });
-    const end = (e) => {
+    const end = () => {
       el.classList.remove('pressed');
       if (up) up();
     };
@@ -69,55 +113,81 @@ function initControls() {
   bind('btnPass', () => { input.passLatch = true; });
   bind('btnTackle', () => { input.tackleLatch = true; });
   bind('btnSprint', () => { input.sprint = true; }, () => { input.sprint = false; });
-  bind('btnShoot', () => {
-    input.shootHeld = true;
-  }, () => {
-    if (input.shootHeld) input.shootLatch = true;
-    input.shootHeld = false;
-  });
+  bind('btnShoot', () => { input.shootHeld = true; },
+    () => { if (input.shootHeld) input.shootLatch = true; input.shootHeld = false; });
+  bind('btnSwitch', () => { input.switchLatch = true; });
+  bind('btnCam', () => { input.camLatch = true; });
 
-  /* --- Клавиатура (для отладки и десктопа) --- */
+  /* P2 кнопки */
+  bind('btnPass2', () => { input2.passLatch = true; });
+  bind('btnTackle2', () => { input2.tackleLatch = true; });
+  bind('btnSprint2', () => { input2.sprint = true; }, () => { input2.sprint = false; });
+  bind('btnShoot2', () => { input2.shootHeld = true; },
+    () => { if (input2.shootHeld) input2.shootLatch = true; input2.shootHeld = false; });
+
+  /* --- клавиатура --- */
   const keys = {};
   window.addEventListener('keydown', (e) => {
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     if (keys[e.code]) return;
     keys[e.code] = true;
     if (e.code === 'KeyJ') input.passLatch = true;
-    if (keys['KeyK']) { input.shootHeld = true; }
+    if (e.code === 'KeyC') input.camLatch = true;
+    if (e.code === 'KeyQ') input.switchLatch = true;
     if (e.code === 'Space') input.tackleLatch = true;
+    if (e.code === 'Numpad1') input2.passLatch = true;
+    if (e.code === 'Numpad0') input2.tackleLatch = true;
   });
   window.addEventListener('keyup', (e) => {
     keys[e.code] = false;
     if (e.code === 'KeyK' && input.shootHeld) input.shootLatch = true;
-    if (input.shootHeld && !keys['KeyK']) { input.shootHeld = false; }
+    if (input.shootHeld && !keys['KeyK']) input.shootHeld = false;
+    if (e.code === 'Numpad2' && input2.shootHeld) input2.shootLatch = true;
+    if (input2.shootHeld && !keys['Numpad2']) input2.shootHeld = false;
   });
 
   window.addEventListener('pointerdown', () => { Snd.init(); Snd.resume(); }, { once: true });
 
-  /* Обновление каждый кадр */
   return function poll(dt) {
-    let kx = 0, ky = 0;
+    /* P1 */
+    pollOne(input, keys, dt, false);
+    /* P2: стрелки + Numpad */
+    pollOne(input2, keys, dt, true);
+  };
+}
+
+function pollOne(inp, keys, dt, isTwo) {
+  if (!inp.active) { inp.moveX = 0; inp.moveY = 0; inp.shootCharge = 0; return; }
+  let kx = 0, ky = 0;
+  if (!isTwo) {
     if (keys['KeyA'] || keys['ArrowLeft']) kx -= 1;
     if (keys['KeyD'] || keys['ArrowRight']) kx += 1;
     if (keys['KeyW'] || keys['ArrowUp']) ky -= 1;
     if (keys['KeyS'] || keys['ArrowDown']) ky += 1;
-    const mag = Math.sqrt(input.joyX ** 2 + input.joyY ** 2);
-    if (mag > 0.02) { input.moveX = input.joyX; input.moveY = input.joyY; }
-    else if (kx || ky) {
-      const l = Math.sqrt(kx * kx + ky * ky);
-      input.moveX = kx / l; input.moveY = ky / l;
-    } else if (input.shootHeld) { /* стоим при замахе */ }
-    else { input.moveX = 0; input.moveY = 0; }
+  } else {
+    if (keys['KeyF'] || keys['ArrowLeft2']) kx -= 1;
+    if (keys['KeyH'] || keys['ArrowRight2']) kx += 1;
+    if (keys['KeyT'] || keys['ArrowUp2']) ky -= 1;
+    if (keys['KeyG'] || keys['ArrowDown2']) ky += 1;
+  }
+  const mag = Math.sqrt(inp.joyX * inp.joyX + inp.joyY * inp.joyY);
+  if (mag > 0.02) { inp.moveX = inp.joyX; inp.moveY = inp.joyY; }
+  else if (kx || ky) {
+    const l = Math.sqrt(kx * kx + ky * ky);
+    inp.moveX = kx / l; inp.moveY = ky / l;
+  } else if (!inp.shootHeld) { inp.moveX = 0; inp.moveY = 0; }
 
-    input.sprint = input.sprint || !!keys['KeyL'];
-    if (input.shootHeld) input.shootCharge = Math.min(1, input.shootCharge + dt * 1.4);
-    if (!input.shootHeld && !input.shootLatch) input.shootCharge = 0;
-  };
+  if (isTwo && inp.sprint && keys['Numpad3'] !== undefined) inp.sprint = true;
+  if (inp.shootHeld) inp.shootCharge = Math.min(1, inp.shootCharge + dt * 1.4);
+  if (!inp.shootHeld && !inp.shootLatch) inp.shootCharge = 0;
 }
 
-/* Разовая очистка защёлок — вызывает game.js после обработки */
 function flushLatches() {
-  input.passLatch = false;
-  input.tackleLatch = false;
-  input.shootLatch = false;
+  for (const inp of [input, input2]) {
+    inp.passLatch = false;
+    inp.tackleLatch = false;
+    inp.shootLatch = false;
+    inp.switchLatch = false;
+    inp.camLatch = false;
+  }
 }

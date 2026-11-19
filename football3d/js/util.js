@@ -1,22 +1,22 @@
 'use strict';
-/* ==== Глобальная конфигурация и математика ==== */
+/* ==== Глобальная конфигурация, математика, настройки ==== */
 
 const CFG = {
   FIELD_L: 105, FIELD_W: 68,
   GOAL_W: 7.32, GOAL_H: 2.44,
   BALL_R: 0.36,
-  GRAVITY: 13.5,
-  PLAYER_SPEED: 7.6,
-  SPRINT_MULT: 1.36,
-  KEEPER_SPEED: 7.2,
+  GRAVITY: 12.4,
+  PLAYER_SPEED: 7.8,
+  SPRINT_MULT: 1.32,
+  KEEPER_SPEED: 6.6,
   CONTROL_DIST: 1.35,
-  KICK_COOLDOWN: 0.32,
+  KICK_COOLDOWN: 0.28,
 };
 
 const DIFF = {
-  easy:   { speed: 0.84, skill: 0.55, passRate: 0.55, shotRates: 0.55 },
-  normal: { speed: 0.94, skill: 0.75, passRate: 0.75, shotRate: 0.7 },
-  hard:   { speed: 1.02, skill: 0.92, passRate: 0.9,  shotRate: 0.85 },
+  easy:   { speed: 0.84, skill: 0.55, passRate: 0.55, shotRate: 0.55 },
+  normal: { speed: 0.94, skill: 0.75, passRate: 0.78, shotRate: 0.7 },
+  hard:   { speed: 1.03, skill: 0.92, passRate: 0.92, shotRate: 0.85 },
 };
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -41,7 +41,17 @@ function makeCanvasTexture(w, h, draw) {
   return tex;
 }
 
-/* Простая очередь конечных автоматов времени */
+/* Тексты комментатора */
+const PHRASES = {
+  pass: ['Точная передача!', 'Разобрал свой ход!', 'Хорошее решение', 'Быстрый розыгрыш'],
+  shot: ['Опасный момент!', 'Удар!!!', 'С винта!', 'Бьёт!'],
+  save: ['Вратарь тащит!', 'Такой сэйв!', 'Кипер на месте!'],
+  miss: ['Чуть-чуть мимо!', 'Рядом со штангой!', 'Не хватает точности!'],
+  goal: ['В ВОРОТА!!!', 'ГОЛ ГОЛ ГОЛ!', 'Никаких шансов вратарю!'],
+  tackle: ['Отбор!', 'Мяч отобран', 'Жёсткий подкат!'],
+  offside: ['Положение вне игры!', 'Флажок судьи!'],
+};
+
 class Timer {
   constructor() { this.t = 0; this.cb = null; }
   start(sec, cb) { this.t = sec; this.cb = cb; }
