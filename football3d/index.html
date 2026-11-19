@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b2e13">
+<title>Футбол 3D — Мобильный матч</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<!-- Табло -->
+<div id="hud" class="hidden">
+  <div id="scoreboard">
+    <span class="team t0" id="nameA">СИНИЕ</span>
+    <span class="score" id="score">0 : 0</span>
+    <span class="team t1" id="nameB">КРАСНЫЕ</span>
+    <span class="time" id="clock">00:00</span>
+    <span class="half" id="halfLabel">1-й тайм</span>
+  </div>
+  <div id="staminaWrap"><div id="staminaBar"></div><div id="staminaFill"></div></div>
+  <button id="pauseBtn" aria-label="Пауза">II</button>
+</div>
+
+<!-- Центральные сообщения -->
+<div id="banner" class="hidden"></div>
+
+<!-- Виртуальный джойстик -->
+<div id="joyZone" class="hidden">
+  <div id="joyBase"><div id="joyStick"></div></div>
+</div>
+
+<!-- Кнопки действий -->
+<div id="actions" class="hidden">
+  <button class="abtn sprint" id="btnSprint"><span>СПРИНТ</span></button>
+  <button class="abtn tackle" id="btnTackle"><span>ОТБОР</span></button>
+  <button class="abtn pass" id="btnPass"><span>ПАС</span></button>
+  <button class="abtn shoot" id="btnShoot"><span>УДАР<div id="chargeRing"></div></span></button>
+</div>
+
+<!-- Управляемый игрок: стрелка-маркер рендерится в 3D -->
+
+<!-- Меню -->
+<div id="menu">
+  <div class="menu-box">
+    <h1>⚽ ФУТБОЛ 3D</h1>
+    <p class="sub">Полноценный матч • 11 на 11 • Сенсорное управление</p>
+    <div class="row">
+      <label>Сложность компьютера</label>
+      <div class="seg" id="diffSeg">
+        <button data-v="easy">Лёгкая</button>
+        <button data-v="normal" class="on">Средняя</button>
+        <button data-v="hard">Сложная</button>
+      </div>
+    </div>
+    <div class="row">
+      <label>Длина матча</label>
+      <div class="seg" id="lenSeg">
+        <button data-v="4">4 мин</button>
+        <button data-v="6" class="on">6 мин</button>
+        <button data-v="10">10 мин</button>
+      </div>
+    </div>
+    <button id="playBtn">ИГРАТЬ МАТЧ</button>
+    <div class="hint">
+      <b>Управление:</b> слева — джойстик, справа — ПАС / УДАР (держи для силы) / СПРИНТ (держи) / ОТБОР.<br>
+      На клавиатуре: WASD — движение, J — пас, K — удар, L — спринт, Пробел — отбор.
+    </div>
+  </div>
+</div>
+
+<!-- Пауза -->
+<div id="pauseMenu" class="hidden">
+  <div class="menu-box small">
+    <h2>ПАУЗА</h2>
+    <button id="resumeBtn">ПРОДОЛЖИТЬ</button>
+    <button id="quitBtn" class="ghost">ЗАВЕРШИТЬ МАТЧ</button>
+  </div>
+</div>
+
+<!-- Результат -->
+<div id="endScreen" class="hidden">
+  <div class="menu-box small">
+    <h2 id="endTitle">ФИНАЛЬНЫЙ СВИСТОК</h2>
+    <div id="endScore" class="end-score">0 : 0</div>
+    <div id="endPhrase" class="end-phrase"></div>
+    <button id="againBtn">ИГРАТЬ СНОВА</button>
+  </div>
+</div>
+
+<div id="rotateHint" class="hidden">📱 Поверните телефон горизонтально</div>
+<div id="fatalErr" class="hidden">Не удалось запустить WebGL на этом устройстве.</div>
+
+<script src="lib/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/field.js"></script>
+<script src="js/ball.js"></script>
+<script src="js/player.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/controls.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
